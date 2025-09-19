@@ -5,12 +5,18 @@ import { cn } from '@/lib/utils';
 
 interface SearchBoxProps {
   onSearch: (query: string) => void;
+  initialValue?: string;
   placeholder?: string;
   className?: string;
 }
 
-export function SearchBox({ onSearch, placeholder = "Search your knowledge base...", className }: SearchBoxProps) {
-  const [query, setQuery] = useState('');
+export function SearchBox({ onSearch, initialValue = '', placeholder = "Search your knowledge base...", className }: SearchBoxProps) {
+  const [query, setQuery] = useState(initialValue);
+
+  // Update query when initialValue changes
+  useEffect(() => {
+    setQuery(initialValue);
+  }, [initialValue]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

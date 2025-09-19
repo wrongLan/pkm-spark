@@ -1,3 +1,4 @@
+import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { SearchResult } from '@/lib/types';
 import { cn } from '@/lib/utils';

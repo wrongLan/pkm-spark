@@ -1,3 +1,4 @@
+import React from 'react';
 import { SearchResult } from '@/lib/types';
 import { ResultItem } from './ResultItem';
 import { Loader2, Search, AlertCircle } from 'lucide-react';

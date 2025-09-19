@@ -30,3 +30,9 @@ export interface TagOption {
 }
 
 export type TagFilterMode = 'any' | 'all';
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  citations?: Array<{ id: string; title: string; url?: string | null }>;
+}

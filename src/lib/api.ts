@@ -1,4 +1,4 @@
-import { SearchResponse, Item, TagOption } from './types';
+import { SearchResponse, Item, TagOption, SearchResult } from './types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
@@ -140,4 +140,64 @@ export async function proposeCategories(sample = 200): Promise<string[]> {
 
   const data = await response.json();
   return data.proposal;
+}
+
+export async function chatAsk(params: {
+  question: string;
+  top_k?: number;
+  tagsAny?: string[];
+  tagsAll?: string[];
+  ids?: string[];
+  conversation_id?: string | null;
+}): Promise<{
+  answer: string;
+  citations: Array<{ id: string; title: string; url?: string | null }>;
+  conversation_id?: string;
+  usage?: { input_tokens?: number; output_tokens?: number };
+}> {
+  const { question, top_k = 5, tagsAny, tagsAll, ids, conversation_id } = params;
+  
+  const body: any = { question, top_k };
+  if (tagsAny?.length) body.tagsAny = tagsAny;
+  if (tagsAll?.length) body.tagsAll = tagsAll;
+  if (ids?.length) body.ids = ids;
+  if (conversation_id !== undefined) body.conversation_id = conversation_id;
+
+  const response = await fetch(`${API_BASE_URL}/chat/v1/ask`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404 || response.status === 501) {
+      throw new Error('NOT_AVAILABLE');
+    }
+    throw new Error(`Chat failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function localCompose(question: string, results: SearchResult[]): Promise<{
+  answer: string;
+  citations: Array<{ id: string; title: string; url?: string | null }>;
+}> {
+  const topResults = results.slice(0, 3);
+  
+  const answer = `Here's what I found from your library:
+
+${topResults.map((result, i) => 
+  `${i + 1}. **${result.title}** - ${result.source}${result.url ? ` ([Link](${result.url}))` : ''}`
+).join('\n\n')}`;
+
+  const citations = topResults.map(result => ({
+    id: result.id,
+    title: result.title,
+    url: result.url || null
+  }));
+
+  return { answer, citations };
 }

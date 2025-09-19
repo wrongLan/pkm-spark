@@ -1,14 +1,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Settings, MessageSquare } from 'lucide-react';
 import { SearchBox } from '@/components/SearchBox';
 import { ResultsList } from '@/components/ResultsList';
 import { ResultDrawer } from '@/components/ResultDrawer';
 import { Toolbar } from '@/components/Toolbar';
 import { FiltersPanel } from '@/components/FiltersPanel';
+import { ChatPanel } from '@/components/ChatPanel/ChatPanel';
 import { SearchResult, TagOption, TagFilterMode } from '@/lib/types';
 import { search, deleteItem, exportItems, fetchTags, applyTags } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,6 +23,7 @@ export default function Search() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   
   // Filter state
   const [availableTags, setAvailableTags] = useState<TagOption[]>([]);
@@ -205,7 +208,10 @@ export default function Search() {
         setSelectedResult(prev => prev ? { ...prev, tags: newTags } : null);
       }
 
-      console.log('Tags updated successfully');
+      toast({
+        title: "Tags updated",
+        description: "Tags updated successfully",
+      });
     } catch (error: any) {
       if (error.message === 'NOT_AVAILABLE') {
         // Keep changes in memory for session
@@ -217,9 +223,16 @@ export default function Search() {
           setSelectedResult(prev => prev ? { ...prev, tags: newTags } : null);
         }
 
-        console.log('Server tagging not enabled—changes are temporary');
+        toast({
+          title: "Tagging not available",
+          description: "Server tagging not enabled—changes are temporary",
+        });
       } else {
-        console.error('Failed to update tags:', error);
+        toast({
+          title: "Tag update failed", 
+          description: error.message || 'Failed to update tags',
+          variant: "destructive"
+        });
         throw error;
       }
     }
@@ -259,15 +272,25 @@ export default function Search() {
       // Try to use the API endpoint
       const items = await exportItems(selectedIdsArray);
       downloadJSON(items, 'pkm-export.json');
-      console.log("Export successful", `Exported ${items.length} items`);
+      toast({
+        title: "Export successful",
+        description: `Exported ${items.length} items`,
+      });
     } catch (err) {
       if (err instanceof Error && err.message === 'NOT_AVAILABLE') {
         // Fallback to client-side export
         const selectedResults = filteredResults.filter(r => selectedIds.has(r.id));
         downloadJSON(selectedResults, 'pkm-export.json');
-        console.log("Export completed (fallback)", `Exported ${selectedResults.length} items using fallback method`);
+        toast({
+          title: "Export completed (fallback)",
+          description: `Exported ${selectedResults.length} items using fallback method`,
+        });
       } else {
-        console.error("Export failed", err instanceof Error ? err.message : 'Export failed');
+        toast({
+          title: "Export failed",
+          description: err instanceof Error ? err.message : 'Export failed',
+          variant: "destructive"
+        });
       }
     } finally {
       setIsExporting(false);
@@ -285,12 +308,22 @@ export default function Search() {
         newSet.delete(id);
         return newSet;
       });
-      console.log("Item deleted", "The item has been removed from your library");
+      toast({
+        title: "Item deleted",
+        description: "The item has been removed from your library",
+      });
     } catch (err) {
       if (err instanceof Error && err.message === 'NOT_AVAILABLE') {
-        console.log("Delete not available yet", "This feature is not yet available on the backend");
+        toast({
+          title: "Delete not available yet",
+          description: "This feature is not yet available on the backend",
+        });
       } else {
-        console.error("Delete failed", err instanceof Error ? err.message : 'Delete failed');
+        toast({
+          title: "Delete failed",
+          description: err instanceof Error ? err.message : 'Delete failed',
+          variant: "destructive"
+        });
       }
     } finally {
       setIsDeleting(false);
@@ -310,74 +343,115 @@ export default function Search() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="text-center flex-1">
-              <h1 className="text-3xl font-bold text-foreground mb-2">PKM Search</h1>
-              <p className="text-muted-foreground">
-                Search through your personal knowledge management system
-              </p>
+    <div className="flex h-screen">
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col ${chatOpen ? 'lg:mr-96' : ''}`}>
+        <div className="min-h-screen bg-background">
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <div className="text-center flex-1">
+                  <h1 className="text-3xl font-bold text-foreground mb-2">PKM Search</h1>
+                  <p className="text-muted-foreground">
+                    Search through your personal knowledge management system
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant={chatOpen ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => setChatOpen(!chatOpen)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Chat
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="flex items-center gap-2"
+                  >
+                    <Link to="/settings/categories">
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-center mb-8">
+                <SearchBox onSearch={handleSearch} initialValue={query} />
+              </div>
+
+              {/* Filters Panel */}
+              <FiltersPanel
+                availableTags={availableTags}
+                selectedTags={selectedTags}
+                filterMode={filterMode}
+                onTagsChange={handleTagsChange}
+                onModeChange={handleFilterModeChange}
+                onClear={handleClearFilters}
+                className="mb-6"
+              />
+
+              {filteredResults.length > 0 && (
+                <Toolbar 
+                  selectedCount={selectedIds.size}
+                  onExportSelected={handleExportSelected}
+                  isExporting={isExporting}
+                />
+              )}
+
+              <ResultsList
+                results={filteredResults}
+                loading={loading}
+                error={error}
+                query={query}
+                onResultClick={handleResultClick}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+                onSelectAll={handleSelectAll}
+              />
+
+              <ResultDrawer
+                result={selectedResult}
+                open={drawerOpen}
+                onOpenChange={setDrawerOpen}
+                onDelete={handleDelete}
+                onTagsUpdate={handleTagsUpdate}
+                availableTags={availableTags}
+                isDeleting={isDeleting}
+              />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="flex items-center gap-2"
-            >
-              <Link to="/settings/categories">
-                <Settings className="h-4 w-4" />
-                Settings
-              </Link>
-            </Button>
           </div>
-
-          <div className="flex justify-center mb-8">
-            <SearchBox onSearch={handleSearch} initialValue={query} />
-          </div>
-
-          {/* Filters Panel */}
-          <FiltersPanel
-            availableTags={availableTags}
-            selectedTags={selectedTags}
-            filterMode={filterMode}
-            onTagsChange={handleTagsChange}
-            onModeChange={handleFilterModeChange}
-            onClear={handleClearFilters}
-            className="mb-6"
-          />
-
-          {filteredResults.length > 0 && (
-            <Toolbar 
-              selectedCount={selectedIds.size}
-              onExportSelected={handleExportSelected}
-              isExporting={isExporting}
-            />
-          )}
-
-          <ResultsList
-            results={filteredResults}
-            loading={loading}
-            error={error}
-            query={query}
-            onResultClick={handleResultClick}
-            selectedIds={selectedIds}
-            onToggleSelect={handleToggleSelect}
-            onSelectAll={handleSelectAll}
-          />
-
-          <ResultDrawer
-            result={selectedResult}
-            open={drawerOpen}
-            onOpenChange={setDrawerOpen}
-            onDelete={handleDelete}
-            onTagsUpdate={handleTagsUpdate}
-            availableTags={availableTags}
-            isDeleting={isDeleting}
-          />
         </div>
       </div>
+
+      {/* Chat Panel */}
+      <div className={`fixed right-0 top-0 h-full w-96 bg-background border-l transition-transform duration-300 z-40 ${
+        chatOpen ? 'translate-x-0' : 'translate-x-full'
+      } lg:relative lg:w-96 lg:translate-x-0 ${chatOpen ? 'lg:block' : 'lg:hidden'}`}>
+        <ChatPanel
+          selectedItems={Array.from(selectedIds)}
+          currentQuery={query}
+          appliedTags={{
+            tagsAny: filterMode === 'any' ? selectedTags : [],
+            tagsAll: filterMode === 'all' ? selectedTags : [],
+            mode: filterMode
+          }}
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+          className="h-full"
+        />
+      </div>
+
+      {/* Mobile Overlay */}
+      {chatOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden" 
+          onClick={() => setChatOpen(false)}
+        />
+      )}
     </div>
   );
 }

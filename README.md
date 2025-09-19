@@ -1,127 +1,139 @@
-# PKM Search App
+# PKM Search
 
-A minimal React-based Personal Knowledge Management (PKM) search interface.
+A minimal personal knowledge management search interface built with React, Vite, and Tailwind CSS.
 
 ## Features
 
 - **Search Interface**: Clean, debounced search with real-time results
-- **Result Details**: Expandable drawer showing detailed result information  
-- **API Integration**: Connects to your backend search service
+- **Results Display**: Shows title, source, and relevance scores with checkboxes
+- **Selection & Export**: Select multiple items and export as JSON
+- **Item Management**: View detailed information and delete items
+- **Result Details**: Click any result to view detailed information in a slide-out drawer
+- **Loading States**: Proper loading, empty, and error state handling
 - **Responsive Design**: Works on desktop and mobile devices
-- **TypeScript Support**: Full type safety throughout the application
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ (recommended: use [nvm](https://github.com/nvm-sh/nvm))
-- pnpm (or npm/yarn)
+- Node.js 18+ and pnpm (or npm/yarn)
+- A backend API that implements the search endpoint
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-```
-
+1. Clone the repository
 2. Install dependencies:
-```bash
-pnpm install
-```
+   ```bash
+   pnpm install
+   ```
 
 3. Set up environment variables:
-```bash
-cp .env.local.example .env.local
-```
-
-4. Edit `.env.local` and set your API base URL:
-```bash
-VITE_API_BASE_URL=http://localhost:3000
-```
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   
+4. Edit `.env.local` and set your API base URL (defaults to http://127.0.0.1:8000):
+   ```
+   VITE_API_BASE_URL=http://your-backend-url:port
+   ```
 
 5. Start the development server:
-```bash
-pnpm dev
+   ```bash
+   pnpm dev
+   ```
+
+6. Open [http://localhost:5173](http://localhost:5173) in your browser
+
+## API Requirements
+
+Your backend must implement:
+
+### Search Endpoint (Required)
+```
+POST {API_BASE_URL}/search/v1/query
+Content-Type: application/json
+
+Body: { "q": "search query", "limit": 20 }
+Response: { "results": SearchResult[], "total": number }
 ```
 
-The app will be available at `http://localhost:8080`
+### Delete Endpoint (Optional - Phase 2)
+```
+DELETE {API_BASE_URL}/items/v1/{id}
+Response: { "deleted": 1 }
+```
 
-## API Integration
+### Export Endpoint (Optional - Phase 2)
+```
+GET {API_BASE_URL}/export/v1?ids=comma,separated,ids
+Response: Item[]
+```
 
-The app expects your backend to provide a search endpoint:
-
-**Endpoint**: `POST ${VITE_API_BASE_URL}/search/v1/query`
-
-**Request Body**:
-```json
+Where `SearchResult` has the shape:
+```typescript
 {
-  "q": "search query",
-  "limit": 20
+  id: string;
+  source: string;
+  title: string;
+  url?: string;
+  score?: number;
 }
 ```
 
-**Response**:
-```json
+And `Item` extends `SearchResult` with:
+```typescript
 {
-  "results": [
-    {
-      "id": "unique-id",
-      "source": "source-name",
-      "title": "Result Title",
-      "url": "https://optional-link.com",
-      "score": 0.95
-    }
-  ],
-  "total": 1
+  created_at?: string;
+  content_text?: string;
+  metadata?: Record<string, any>;
 }
 ```
+
+## Testing Checklist
+
+1. **Backend Setup**: Start your backend and confirm `GET /health` works
+2. **Frontend**: Run `pnpm dev` and open http://localhost:5173
+3. **Search**: Search for a known term → see results with checkboxes
+4. **Selection**: Click checkboxes to select items, use "Select all"
+5. **Export**: 
+   - Select items → click "Export Selected"
+   - If backend export exists: downloads full JSON from API
+   - If not: downloads fallback JSON of selected rows as `pkm-export.json`
+6. **Item Details**: Click "View Details" → drawer opens with metadata
+7. **External Links**: Click item titles (if URL present) → opens in new tab
+8. **Delete**: 
+   - In item drawer → click Delete → confirm dialog
+   - If backend delete exists: item disappears from list
+   - If not: shows toast "Delete not available yet"
+
+## Error Handling
+
+- **Missing Endpoints**: Graceful fallbacks with user-friendly messages
+- **CORS Issues**: Check backend allows `http://localhost:5173`
+- **Network Errors**: Toast notifications with helpful error messages
+- **Empty States**: Clear messaging for no results or empty searches
 
 ## Project Structure
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── SearchBox.tsx   # Search input with debouncing
-│   ├── ResultsList.tsx # Results display with states
-│   ├── ResultItem.tsx  # Individual result item
-│   └── ResultDrawer.tsx # Result detail drawer
+├── components/           # React components
+│   ├── ui/              # shadcn/ui components
+│   ├── SearchBox.tsx    # Search input with debouncing
+│   ├── ResultsList.tsx  # Results list with checkboxes
+│   ├── ResultItem.tsx   # Individual result item
+│   ├── ResultDrawer.tsx # Details panel with delete
+│   └── Toolbar.tsx      # Export selected button
 ├── lib/
 │   ├── api.ts          # API client functions
 │   ├── types.ts        # TypeScript interfaces
-│   └── ports.ts        # Future feature stubs
+│   ├── ports.ts        # Future API stubs
+│   └── utils.ts        # Utility functions
 └── pages/
-    ├── Index.tsx       # Redirects to /search
-    └── Search.tsx      # Main search page
+    ├── Index.tsx       # Redirects to search
+    └── Search.tsx      # Main search page with state management
 ```
 
-## Future Features
+## Contributing
 
-The following features are stubbed in `lib/ports.ts` and ready for implementation:
-
-- `embed()` - Text embedding functionality
-- `tag()` - Item tagging system  
-- `exportItems()` - Data export capabilities
-- `deleteItem()` - Item deletion
-
-## Technologies Used
-
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **Tailwind CSS** - Styling framework
-- **Radix UI** - Accessible component primitives
-- **React Router** - Client-side routing
-- **TanStack Query** - Data fetching and caching
-
-## Development
-
-- Run `pnpm dev` to start the development server
-- Run `pnpm build` to create a production build
-- Run `pnpm preview` to preview the production build locally
-
-## Deployment
-
-Deploy using any static hosting service (Vercel, Netlify, etc.) or serve the `dist` folder after running `pnpm build`.
-
-Remember to set the `VITE_API_BASE_URL` environment variable in your deployment environment.
+This implementation includes search, selection, export, and delete functionality with proper error handling and fallbacks.

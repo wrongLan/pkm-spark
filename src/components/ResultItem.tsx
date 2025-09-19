@@ -3,6 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { SearchResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TagChips } from './TagChips';
 
 interface ResultItemProps {
   result: SearchResult;
@@ -53,7 +54,7 @@ export function ResultItem({ result, onClick, className, isSelected, onToggleSel
           >
             {result.title}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
               {result.source}
             </span>
@@ -63,6 +64,11 @@ export function ResultItem({ result, onClick, className, isSelected, onToggleSel
               </span>
             )}
           </div>
+          {result.tags && result.tags.length > 0 && (
+            <div className="mt-2">
+              <TagChips tags={result.tags} maxVisible={3} />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {result.url && (

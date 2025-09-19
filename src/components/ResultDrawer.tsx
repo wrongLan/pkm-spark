@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ExternalLink, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
-import { SearchResult } from '@/lib/types';
+import { SearchResult, TagOption } from '@/lib/types';
 import {
   Sheet,
   SheetContent,
@@ -19,20 +19,51 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { TagEditor } from './TagEditor';
 
 interface ResultDrawerProps {
   result: SearchResult | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDelete: (id: string) => void;
+  onTagsUpdate?: (id: string, tags: string[]) => void;
+  availableTags?: TagOption[];
   isDeleting?: boolean;
 }
 
-export function ResultDrawer({ result, open, onOpenChange, onDelete, isDeleting = false }: ResultDrawerProps) {
+export function ResultDrawer({ 
+  result, 
+  open, 
+  onOpenChange, 
+  onDelete, 
+  onTagsUpdate, 
+  availableTags = [], 
+  isDeleting = false 
+}: ResultDrawerProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showMetadata, setShowMetadata] = useState(false);
+  const [isUpdatingTags, setIsUpdatingTags] = useState(false);
 
   if (!result) return null;
+
+  const handleTagsUpdate = async (add: string[], remove: string[]) => {
+    if (!result || !onTagsUpdate) return;
+    
+    setIsUpdatingTags(true);
+    try {
+      // Calculate new tags
+      const currentTags = result.tags || [];
+      const newTags = currentTags
+        .filter(tag => !remove.includes(tag))
+        .concat(add);
+      
+      await onTagsUpdate(result.id, newTags);
+    } catch (error) {
+      console.error('Failed to update tags:', error);
+    } finally {
+      setIsUpdatingTags(false);
+    }
+  };
 
   const handleDelete = () => {
     onDelete(result.id);
@@ -81,6 +112,14 @@ export function ResultDrawer({ result, open, onOpenChange, onDelete, isDeleting 
                 No content available
               </div>
             </div>
+
+            {/* Tag Editor */}
+            <TagEditor
+              result={result}
+              availableTags={availableTags}
+              onSave={handleTagsUpdate}
+              isLoading={isUpdatingTags}
+            />
 
             <Collapsible open={showMetadata} onOpenChange={setShowMetadata}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">

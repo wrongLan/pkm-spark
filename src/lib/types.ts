@@ -4,6 +4,7 @@ export interface SearchResult {
   title: string;
   url?: string;
   score?: number;
+  tags?: string[];
 }
 
 export interface SearchResponse {
@@ -17,7 +18,15 @@ export interface Item {
   title: string;
   url?: string;
   score?: number;
+  tags?: string[];
   created_at?: string;
   content_text?: string;
   metadata?: Record<string, any>;
 }
+
+export interface TagOption {
+  name: string;
+  count?: number;
+}
+
+export type TagFilterMode = 'any' | 'all';

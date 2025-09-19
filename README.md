@@ -1,73 +1,127 @@
-# Welcome to your Lovable project
+# PKM Search App
 
-## Project info
+A minimal React-based Personal Knowledge Management (PKM) search interface.
 
-**URL**: https://lovable.dev/projects/0158dba0-5a52-4b97-9e7d-ad76f2ef5098
+## Features
 
-## How can I edit this code?
+- **Search Interface**: Clean, debounced search with real-time results
+- **Result Details**: Expandable drawer showing detailed result information  
+- **API Integration**: Connects to your backend search service
+- **Responsive Design**: Works on desktop and mobile devices
+- **TypeScript Support**: Full type safety throughout the application
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0158dba0-5a52-4b97-9e7d-ad76f2ef5098) and start prompting.
+- Node.js 18+ (recommended: use [nvm](https://github.com/nvm-sh/nvm))
+- pnpm (or npm/yarn)
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+1. Clone the repository:
+```bash
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies:
+```bash
+pnpm install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Set up environment variables:
+```bash
+cp .env.local.example .env.local
+```
 
-**Use GitHub Codespaces**
+4. Edit `.env.local` and set your API base URL:
+```bash
+VITE_API_BASE_URL=http://localhost:3000
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+5. Start the development server:
+```bash
+pnpm dev
+```
 
-## What technologies are used for this project?
+The app will be available at `http://localhost:8080`
 
-This project is built with:
+## API Integration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The app expects your backend to provide a search endpoint:
 
-## How can I deploy this project?
+**Endpoint**: `POST ${VITE_API_BASE_URL}/search/v1/query`
 
-Simply open [Lovable](https://lovable.dev/projects/0158dba0-5a52-4b97-9e7d-ad76f2ef5098) and click on Share -> Publish.
+**Request Body**:
+```json
+{
+  "q": "search query",
+  "limit": 20
+}
+```
 
-## Can I connect a custom domain to my Lovable project?
+**Response**:
+```json
+{
+  "results": [
+    {
+      "id": "unique-id",
+      "source": "source-name",
+      "title": "Result Title",
+      "url": "https://optional-link.com",
+      "score": 0.95
+    }
+  ],
+  "total": 1
+}
+```
 
-Yes, you can!
+## Project Structure
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+src/
+├── components/          # Reusable UI components
+│   ├── SearchBox.tsx   # Search input with debouncing
+│   ├── ResultsList.tsx # Results display with states
+│   ├── ResultItem.tsx  # Individual result item
+│   └── ResultDrawer.tsx # Result detail drawer
+├── lib/
+│   ├── api.ts          # API client functions
+│   ├── types.ts        # TypeScript interfaces
+│   └── ports.ts        # Future feature stubs
+└── pages/
+    ├── Index.tsx       # Redirects to /search
+    └── Search.tsx      # Main search page
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Future Features
+
+The following features are stubbed in `lib/ports.ts` and ready for implementation:
+
+- `embed()` - Text embedding functionality
+- `tag()` - Item tagging system  
+- `exportItems()` - Data export capabilities
+- `deleteItem()` - Item deletion
+
+## Technologies Used
+
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling framework
+- **Radix UI** - Accessible component primitives
+- **React Router** - Client-side routing
+- **TanStack Query** - Data fetching and caching
+
+## Development
+
+- Run `pnpm dev` to start the development server
+- Run `pnpm build` to create a production build
+- Run `pnpm preview` to preview the production build locally
+
+## Deployment
+
+Deploy using any static hosting service (Vercel, Netlify, etc.) or serve the `dist` folder after running `pnpm build`.
+
+Remember to set the `VITE_API_BASE_URL` environment variable in your deployment environment.

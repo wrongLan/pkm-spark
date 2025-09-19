@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        search: {
+          focus: "hsl(var(--search-focus))",
+          border: "hsl(var(--search-border))",
+        },
+        result: {
+          hover: "hsl(var(--result-hover))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

@@ -1,11 +1,10 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { SearchBox } from '@/components/SearchBox';
 import { ResultsList } from '@/components/ResultsList';
 import { ResultDrawer } from '@/components/ResultDrawer';
 import { Toolbar } from '@/components/Toolbar';
 import { SearchResult } from '@/lib/types';
 import { search, deleteItem, exportItems } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
 
 export default function Search() {
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -17,7 +16,6 @@ export default function Search() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { toast } = useToast();
 
   const handleSearch = useCallback(async (searchQuery: string) => {
     setQuery(searchQuery);
@@ -75,30 +73,20 @@ export default function Search() {
       // Try to use the API endpoint
       const items = await exportItems(selectedIdsArray);
       downloadJSON(items, 'pkm-export.json');
-      toast({
-        title: "Export successful",
-        description: `Exported ${items.length} items`,
-      });
+      console.log("Export successful", `Exported ${items.length} items`);
     } catch (err) {
       if (err instanceof Error && err.message === 'NOT_AVAILABLE') {
         // Fallback to client-side export
         const selectedResults = results.filter(r => selectedIds.has(r.id));
         downloadJSON(selectedResults, 'pkm-export.json');
-        toast({
-          title: "Export completed (fallback)",
-          description: `Exported ${selectedResults.length} items using fallback method`,
-        });
+        console.log("Export completed (fallback)", `Exported ${selectedResults.length} items using fallback method`);
       } else {
-        toast({
-          title: "Export failed",
-          description: err instanceof Error ? err.message : 'Export failed',
-          variant: "destructive",
-        });
+        console.error("Export failed", err instanceof Error ? err.message : 'Export failed');
       }
     } finally {
       setIsExporting(false);
     }
-  }, [selectedIds, results, toast]);
+  }, [selectedIds, results]);
 
   const handleDelete = useCallback(async (id: string) => {
     setIsDeleting(true);
@@ -111,27 +99,17 @@ export default function Search() {
         newSet.delete(id);
         return newSet;
       });
-      toast({
-        title: "Item deleted",
-        description: "The item has been removed from your library",
-      });
+      console.log("Item deleted", "The item has been removed from your library");
     } catch (err) {
       if (err instanceof Error && err.message === 'NOT_AVAILABLE') {
-        toast({
-          title: "Delete not available yet",
-          description: "This feature is not yet available on the backend",
-        });
+        console.log("Delete not available yet", "This feature is not yet available on the backend");
       } else {
-        toast({
-          title: "Delete failed", 
-          description: err instanceof Error ? err.message : 'Delete failed',
-          variant: "destructive",
-        });
+        console.error("Delete failed", err instanceof Error ? err.message : 'Delete failed');
       }
     } finally {
       setIsDeleting(false);
     }
-  }, [toast]);
+  }, []);
 
   const downloadJSON = (data: any, filename: string) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
